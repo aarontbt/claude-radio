@@ -1,8 +1,10 @@
 # AGENTS.md
 
 Claude Radio is an unofficial macOS menu bar app that plays Anthropic's official
-24/7 "Claude FM" YouTube livestream (video id `tRsQsTMvPNg`) as background audio.
-Menu bar only: no Dock icon, no main window, no settings window.
+24/7 "Claude FM" YouTube livestream as background audio. The app follows
+whatever video is currently live on the Claude channel (`UCV03SRZXJEz-hchIAogeJOg`)
+rather than a fixed video ID, since a livestream gets a new ID each time it
+restarts. Menu bar only: no Dock icon, no main window, no settings window.
 
 Human-facing overview is in `README.md`. Built by
 [aarontbt](https://github.com/aarontbt), MIT licensed (see `LICENSE`).
@@ -22,8 +24,8 @@ Human-facing overview is in `README.md`. Built by
 - Source tree:
   ```
   ClaudeRadio/
-  ├── App/                # ClaudeRadioApp.swift (@main), AppDelegate.swift (wires everything together)
-  ├── Playback/            # PlaybackState, WebViewPlaybackEngine, ReconnectManager (backoff)
+  ├── App/                # ClaudeRadioApp.swift (@main), AppDelegate.swift (wires everything together), ClaudeChannel.swift (channel constants)
+  ├── Playback/            # PlaybackState, WebViewPlaybackEngine, LiveStreamResolver, ReconnectManager (backoff)
   ├── NowPlaying/           # NowPlayingInfoUpdater, MediaKeyController
   ├── MenuBar/             # StatusIconProvider, StatusItemController (status item, click/scroll, dropdown)
   ├── Settings/             # AppSettings (UserDefaults), LaunchAtLogin (SMAppService)
@@ -53,7 +55,9 @@ Human-facing overview is in `README.md`. Built by
   `ReconnectManager` uses, in `ReconnectManagerTests.swift`), `PlaybackState`
   equality/description (`PlaybackStateTests.swift`), `AppSettings`
   clamping/persistence (`AppSettingsTests.swift`, isolated `UserDefaults(suiteName:)`
-  per test, not `.standard`).
+  per test, not `.standard`), and `LiveStreamResolver`'s canonical-link
+  extraction and failure handling (`LiveStreamResolverTests.swift`, stubbed
+  `URLProtocol`, no live network calls in tests).
 - After any change to `Playback/` or `NowPlaying/`, manually re-verify: audio
   plays and is controllable via `play()`/`pause()`/`setVolume()`, audio keeps
   playing with no window visible, the status item shows no Dock icon
@@ -92,7 +96,9 @@ appears in the menu bar, and `System Events` reports
   `.accessory`. Any `Settings`/other SwiftUI scenes must not present a visible window.
 - No scraping or resolving raw YouTube stream URLs (no `yt-dlp`/`youtube-dl`, no
   reverse-engineered CDN links). Only the official `https://www.youtube.com/embed/`
-  IFrame Player API.
+  IFrame Player API. `LiveStreamResolver` reading the canonical `<link>` off
+  `channel/UC.../live` to get the current live *video ID* is fine — it never
+  touches a media/CDN URL, only feeds an ID into the IFrame API above.
 - Never use the Claude logo/wordmark or Anthropic trademarks in the app icon or UI
   in a way implying official endorsement. The About panel must clearly state the
   app is unofficial/fan-made, with attribution to Anthropic's official Claude
@@ -103,8 +109,11 @@ appears in the menu bar, and `System Events` reports
   regenerate via `xcodegen generate`.
 - Preserve App Sandbox + `com.apple.security.network.client`; don't add broader
   entitlements without justification (Mac App Store submission is a target channel).
-- `tRsQsTMvPNg` is the only stream target for v1. Don't hardcode alternate streams
-  without explicit user approval.
+- The app follows the Claude channel's current live stream via `LiveStreamResolver`
+  (resolved from `channel/UCV03SRZXJEz-hchIAogeJOg/live`), not a hardcoded video
+  ID. `tRsQsTMvPNg` only remains as the `AppSettings.lastKnownVideoID` seed/
+  fallback. Don't reintroduce a fixed video ID or point the resolver at a
+  different channel without explicit user approval.
 
 ## Known gotchas
 
@@ -124,6 +133,16 @@ Facts that cost real debugging time once; don't relearn them the hard way.
 - `ReconnectManager`'s 15s stall watchdog must stay. The YouTube IFrame player can
   wedge in `.connecting` without ever firing another `stateChange` or `onError`
   event; without the watchdog there is no recovery path short of quitting the app.
+- `LiveStreamResolver`'s request timeouts (8s/10s) must stay below the 15s stall
+  watchdog above, so a hung resolve still lets the fallback-ID load happen
+  before the watchdog fires. Its canonical-link approach on `channel/UC.../live`
+  is the one verified to work; `https://www.youtube.com/embed/live_stream?channel=UC...`
+  was tested directly and does **not** reliably carry the current live video ID,
+  so don't "simplify" the resolver to use it.
+- If `LiveStreamResolver` fails (network error, channel offline, page shape
+  changed), `WebViewPlaybackEngine` must fall back to `AppSettings.lastKnownVideoID`
+  and still attempt to load the player. Never let a resolve failure block
+  playback indefinitely.
 - `WebViewPlaybackEngine.runPlayerCommand`'s trailing `true;` in the injected JS
   must stay. Without it, every successful call reports through the completion
   handler as "JavaScript execution returned a result of an unsupported type",
@@ -147,12 +166,19 @@ Facts that cost real debugging time once; don't relearn them the hard way.
 - Swift 6 + SwiftUI/AppKit, macOS 14+ (Sonoma) minimum.
 - `NSStatusItem` for the menu bar presence, `LSUIElement=YES` / `.accessory`
   activation policy for no Dock icon.
-- Playback: an off-screen `WKWebView` loading the YouTube IFrame Player API
-  (`https://www.youtube.com/embed/tRsQsTMvPNg`), controlled via
+- Playback: an off-screen `WKWebView` loading the YouTube IFrame Player API with
+  a video ID resolved at load time by `LiveStreamResolver`, controlled via
   `evaluateJavaScript`. Chosen over scraping/`yt-dlp` or a backend proxy
   specifically to stay within YouTube's ToS and keep the app Mac-App-Store-eligible.
   **Do not relitigate this choice** without re-validating that background audio,
   App Sandbox, no Dock icon and media keys all still work. If that validation
   fails, the fallback is `AVPlayer` + a resolver.
+- Live ID resolution: `LiveStreamResolver` fetches `channel/UC.../live` and
+  extracts the video ID from the page's canonical `<link>`. Called on every
+  `WebViewPlaybackEngine.loadPlayer()` (launch and every `reload()`), so a
+  stream that ends and restarts with a new ID is picked up automatically the
+  next time `ReconnectManager` triggers a reload. The resolved ID is persisted
+  to `AppSettings.lastKnownVideoID` and used as the fallback if a future
+  resolve fails.
 - Media keys / background audio: `MPRemoteCommandCenter` / `MPNowPlayingInfoCenter`.
 - Launch at login: `SMAppService`.

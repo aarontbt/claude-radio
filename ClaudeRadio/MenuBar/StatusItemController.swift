@@ -8,7 +8,6 @@ import os.log
 @MainActor
 final class StatusItemController {
     private static let logger = Logger(subsystem: "com.xenohawk.ClaudeRadio", category: "MenuBar")
-    private static let streamURL = URL(string: "https://www.youtube.com/watch?v=tRsQsTMvPNg")!
 
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
@@ -178,7 +177,7 @@ final class StatusItemController {
     }
 
     @objc private func openInYouTube() {
-        NSWorkspace.shared.open(Self.streamURL)
+        NSWorkspace.shared.open(ClaudeChannel.liveWatchURL)
     }
 
     @objc private func showAbout() {

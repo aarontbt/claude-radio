@@ -1,11 +1,10 @@
 # Claude Radio
 
+![Claude Radio menu bar icon and dropdown menu](design/screenshot.png)
+
 A lightweight macOS menu bar app that plays Anthropic's official 24/7 "Claude FM"
 YouTube livestream, "music for thinking and building," with one click. No browser
 tab, no Dock icon, no window. Just press play and keep working.
-
-This is an unofficial, fan-made app. It is not affiliated with, endorsed by, or
-sponsored by Anthropic. Claude is a trademark of Anthropic PBC.
 
 ## Features
 
@@ -42,9 +41,9 @@ make test     # run the unit tests
 make clean    # remove build artifacts and the generated .xcodeproj
 ```
 
-The project is generated from `project.yml` via XcodeGen. `ClaudeRadio.xcodeproj`
-is never committed and is safe to delete at any time; `xcodegen generate` (or any
-`make` target above) rebuilds it.
+`make build` puts the app at `build/Debug/ClaudeRadio.app`. Launch it with
+`open build/Debug/ClaudeRadio.app`, or drag it into `/Applications`. `make run`
+does the build and opens it for you in one step.
 
 ## How it works
 
@@ -56,5 +55,4 @@ full architecture writeup.
 ## License
 
 MIT. See `LICENSE`.
-
 Built by [aarontbt](https://github.com/aarontbt).

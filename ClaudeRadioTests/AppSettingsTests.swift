@@ -33,4 +33,16 @@ final class AppSettingsTests: XCTestCase {
         settings.launchAtLogin = true
         XCTAssertTrue(settings.launchAtLogin)
     }
+
+    func testLastKnownVideoIDDefaultsToSeed() {
+        XCTAssertEqual(settings.lastKnownVideoID, ClaudeChannel.seedVideoID)
+    }
+
+    func testLastKnownVideoIDPersists() {
+        settings.lastKnownVideoID = "abcdefghijk"
+        XCTAssertEqual(settings.lastKnownVideoID, "abcdefghijk")
+
+        let reopened = AppSettings(defaults: defaults)
+        XCTAssertEqual(reopened.lastKnownVideoID, "abcdefghijk")
+    }
 }

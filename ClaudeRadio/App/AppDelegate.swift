@@ -13,7 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
-        playbackEngine = WebViewPlaybackEngine()
+        playbackEngine = WebViewPlaybackEngine(settings: settings)
         mediaKeyController = MediaKeyController(engine: playbackEngine)
         reconnectManager = ReconnectManager(engine: playbackEngine)
         statusItemController = StatusItemController(engine: playbackEngine, settings: settings)

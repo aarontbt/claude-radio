@@ -11,13 +11,17 @@ import os.log
 final class WebViewPlaybackEngine: NSObject, ObservableObject {
     @Published private(set) var state: PlaybackState = .idle
 
-    private static let videoID = "tRsQsTMvPNg"
     private static let logger = Logger(subsystem: "com.xenohawk.ClaudeRadio", category: "Playback")
 
+    private let settings: AppSettings
+    private let resolver: LiveStreamResolver
     private var webView: WKWebView!
     private var hostWindow: NSWindow!
+    private var loadTask: Task<Void, Never>?
 
-    override init() {
+    init(settings: AppSettings, resolver: LiveStreamResolver = LiveStreamResolver()) {
+        self.settings = settings
+        self.resolver = resolver
         super.init()
         setUpWebView()
     }
@@ -62,12 +66,32 @@ final class WebViewPlaybackEngine: NSObject, ObservableObject {
         loadPlayer()
     }
 
+    /// Resolves the channel's current live video ID and loads the player with it.
+    /// A stream that ends and restarts gets a new video ID, so this re-resolves
+    /// on every call rather than reusing a fixed ID — including on every
+    /// `reload()` triggered by `ReconnectManager`, which is what lets the app
+    /// recover automatically when the live stream rotates. If resolution fails
+    /// (network error, no live stream, unexpected page shape), falls back to
+    /// the last-known-good ID persisted in `AppSettings` so playback still
+    /// starts instead of blocking indefinitely.
     private func loadPlayer() {
         state = .connecting
-        // Deliberately NOT youtube.com: the IFrame API validates the embedding
-        // origin, and using youtube.com as our own host page's origin triggers
-        // a self-embed error (observed as YT player error 152 in the spike).
-        webView.loadHTMLString(Self.embedHTML(videoID: Self.videoID), baseURL: URL(string: "https://claude-radio.app"))
+        loadTask?.cancel()
+        loadTask = Task { [weak self] in
+            guard let self else { return }
+            var videoID = settings.lastKnownVideoID
+            do {
+                videoID = try await resolver.resolveLiveVideoID()
+                settings.lastKnownVideoID = videoID
+            } catch {
+                Self.logger.error("live ID resolve failed, falling back to \(videoID, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
+            guard !Task.isCancelled else { return }
+            // Deliberately NOT youtube.com: the IFrame API validates the embedding
+            // origin, and using youtube.com as our own host page's origin triggers
+            // a self-embed error (observed as YT player error 152 in the spike).
+            webView.loadHTMLString(Self.embedHTML(videoID: videoID), baseURL: URL(string: "https://claude-radio.app"))
+        }
     }
 
     func play() {

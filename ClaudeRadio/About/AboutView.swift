@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct AboutView: View {
-    private static let channelURL = URL(string: "https://www.youtube.com/@claude")!
-    private static let streamURL = URL(string: "https://www.youtube.com/watch?v=tRsQsTMvPNg")!
     private static let authorURL = URL(string: "https://github.com/aarontbt")!
 
     var body: some View {
@@ -22,8 +20,8 @@ struct AboutView: View {
                 .foregroundStyle(.secondary)
 
             VStack(spacing: 4) {
-                Link("Open Claude FM Stream", destination: Self.streamURL)
-                Link("Open Claude YouTube Channel", destination: Self.channelURL)
+                Link("Open Claude FM Stream", destination: ClaudeChannel.liveWatchURL)
+                Link("Open Claude YouTube Channel", destination: ClaudeChannel.channelURL)
             }
             .font(.caption)
 

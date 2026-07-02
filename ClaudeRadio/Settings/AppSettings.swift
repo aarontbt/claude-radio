@@ -4,6 +4,7 @@ final class AppSettings {
     private enum Keys {
         static let volume = "volume"
         static let launchAtLogin = "launchAtLogin"
+        static let lastKnownVideoID = "lastKnownVideoID"
     }
 
     private let defaults: UserDefaults
@@ -23,5 +24,12 @@ final class AppSettings {
     var launchAtLogin: Bool {
         get { defaults.bool(forKey: Keys.launchAtLogin) }
         set { defaults.set(newValue, forKey: Keys.launchAtLogin) }
+    }
+
+    /// The most recently resolved live video ID, used as the playback fallback
+    /// when live resolution fails. Defaults to `ClaudeChannel.seedVideoID`.
+    var lastKnownVideoID: String {
+        get { defaults.string(forKey: Keys.lastKnownVideoID) ?? ClaudeChannel.seedVideoID }
+        set { defaults.set(newValue, forKey: Keys.lastKnownVideoID) }
     }
 }

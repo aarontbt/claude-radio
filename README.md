@@ -50,15 +50,8 @@ is never committed and is safe to delete at any time; `xcodegen generate` (or an
 
 Claude Radio plays the stream through an off-screen `WKWebView` running the
 official YouTube IFrame Player API, the same embed YouTube provides for any
-website. It does not scrape or extract raw stream URLs. See `CLAUDE.md` for the
-full architecture writeup and `PRD.md` for the original product requirements.
-
-## Project status
-
-Milestones 0 to 2 are complete: the core playback approach is validated, and all
-P0 features (play/pause, volume, reconnect, launch at login, media keys, About
-panel) are built and working. See `CLAUDE.md` for the detailed status log and
-`PRD.md` for the roadmap.
+website. It does not scrape or extract raw stream URLs. See `AGENTS.md` for the
+full architecture writeup.
 
 ## License
 

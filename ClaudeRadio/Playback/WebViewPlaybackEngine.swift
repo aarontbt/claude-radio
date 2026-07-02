@@ -4,9 +4,9 @@ import WebKit
 import os.log
 
 /// Plays the Claude FM YouTube livestream via an off-screen WKWebView running the
-/// YouTube IFrame Player API. Validated in the PRD.md §10 technical spike
-/// (background audio, App Sandbox, no Dock icon, media keys all confirmed working).
-/// Do not swap this for a scraping/yt-dlp approach. See CLAUDE.md.
+/// YouTube IFrame Player API. Validated via a technical spike: background audio,
+/// App Sandbox, no Dock icon and media keys all confirmed working. Do not swap
+/// this for a scraping/yt-dlp approach. See AGENTS.md.
 @MainActor
 final class WebViewPlaybackEngine: NSObject, ObservableObject {
     @Published private(set) var state: PlaybackState = .idle

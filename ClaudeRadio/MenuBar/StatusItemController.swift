@@ -4,8 +4,7 @@ import os.log
 
 /// Owns the NSStatusItem and its dropdown. Left-click on the icon toggles
 /// play/pause directly; right-click opens the full menu (volume, launch at
-/// login, open in YouTube, about, quit). Matches PRD §5 P0 "Click icon to
-/// toggle; dropdown button as alternative".
+/// login, open in YouTube, about, quit).
 @MainActor
 final class StatusItemController {
     private static let logger = Logger(subsystem: "com.xenohawk.ClaudeRadio", category: "MenuBar")
